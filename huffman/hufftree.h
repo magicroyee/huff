@@ -8,12 +8,13 @@
 using namespace std;
 
 #define WIDTH 1000
+#define HEIGHT 600
 
 class Point //坐标数据结构
 {
 public:
-	double x;
-	double y;
+	int x;
+	int y;
 };
 
 // 统计字符频度的临时结点

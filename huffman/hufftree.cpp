@@ -1,8 +1,8 @@
 #include "hufftree.h"
 #include <graphics.h>
-#include<conio.h>
+#include <conio.h>
 
-void select(HufNode* huf_tree, unsigned int n, int* s1, int* s2)
+void select(HufNode *huf_tree, unsigned int n, int *s1, int *s2)
 {
 	// 找最小
 	unsigned int i;
@@ -25,7 +25,7 @@ void select(HufNode* huf_tree, unsigned int n, int* s1, int* s2)
 		}
 }
 
-void CreateTree(HufNode* huf_tree, unsigned int char_kinds, unsigned int node_num)
+void CreateTree(HufNode *huf_tree, unsigned int char_kinds, unsigned int node_num)
 {
 	unsigned int i;
 	int s1, s2;
@@ -39,12 +39,11 @@ void CreateTree(HufNode* huf_tree, unsigned int char_kinds, unsigned int node_nu
 	}
 }
 
-void HufCode(HufNode* huf_tree, unsigned char_kinds)
+void HufCode(HufNode *huf_tree, unsigned char_kinds)
 {
 	unsigned int i;
 	int cur, next, index;
-//	char* code_tmp = (char*)malloc(256 * sizeof(char)); // 暂存编码，最多256个叶子，编码长度不超多255
-	char* code_tmp = new char [256];
+	char *code_tmp = new char[256];
 	code_tmp[256 - 1] = '\0';
 
 	for (i = 0; i < char_kinds; ++i)
@@ -56,33 +55,30 @@ void HufCode(HufNode* huf_tree, unsigned char_kinds)
 			if (huf_tree[next].lchild == cur)
 				code_tmp[--index] = '0'; // 左‘0’
 			else
-				code_tmp[--index] = '1';								 // 右‘1’
-//		huf_tree[i].code = (char*)malloc((256 - index) * sizeof(char)); // 为第i个字符编码动态分配存储空间
+				code_tmp[--index] = '1'; // 右‘1’
 		huf_tree[i].code = new char[256 - index];
-		strcpy(huf_tree[i].code, &code_tmp[index]);						 // 正向保存编码到树结点相应域中
+		strcpy(huf_tree[i].code, &code_tmp[index]); // 正向保存编码到树结点相应域中
 	}
-	delete [] code_tmp; // 释放编码临时空间
+	delete[] code_tmp; // 释放编码临时空间
 }
 
-int compress(char* ifname, char* ofname)
+int compress(char *ifname, char *ofname)
 {
 	unsigned int i, j;
 	unsigned int char_kinds;	// 字符种类
 	unsigned char char_temp;	// 暂存8bits字符
 	unsigned long file_len = 0; //读入的txt文件中的字符的总长度
-	FILE* infile, * outfile;
-	//关于file类解释，FILE* 指针作为文件句柄，是文件访问的唯一标识，它由fopen函数创建，fopen打开文件成功，则返回一个有效的FILE*指针，否则返回空指针NULL。具体解释参见http://blog.csdn.net/jiahehao/article/details/1862867
+	FILE *infile, *outfile;
 	TmpNode node_temp; //TmpNode用它来定义一个临时节点
 	unsigned int node_num;
-	HufNode * huf_tree;
+	HufNode *huf_tree;
 	char code_buf[256] = "\0"; // 待存编码缓冲区
 	unsigned int code_len;
 	/*
 	** 动态分配256个结点，暂存字符频度，
 	** 统计并拷贝到树结点后立即释放
 	*/
-//	TmpNode* tmp_nodes = (TmpNode*)malloc(256 * sizeof(TmpNode)); //malloc 向系统申请分配指定size个字节的内存空间。返回类型是 void* 类型。
-	TmpNode* tmp_nodes = new TmpNode[256];
+	TmpNode *tmp_nodes = new TmpNode[256];
 	// 初始化暂存结点。一个unsigned char类型是8位，即1个字节，所有的字符都可以用这8位来表示，一共256种字符种类，所以下面用i对应相应的字符种类，为了后面的统计字符种类方便
 	for (i = 0; i < 256; ++i)
 	{
@@ -94,17 +90,17 @@ int compress(char* ifname, char* ofname)
 	// 判断输入文件是否存在
 	if (infile == NULL) //如果打开失败，则infile返回空指针
 		return -1;
-	fread((char*)&char_temp, sizeof(unsigned char), 1, infile); //从infile中读入1个sizeof(unsigned char)这样大小的字节
+	fread((char *)&char_temp, sizeof(unsigned char), 1, infile); //从infile中读入1个sizeof(unsigned char)这样大小的字节
 	// 遍历文件，获取字符频度
 	while (!feof(infile))
 	{
 		++tmp_nodes[char_temp].weight;								 // 统计下标对应字符的权重，利用数组的随机访问快速统计字符频度，因为tmp_nodes[i].uch = (unsigned char)i;数组的256个下标与256种字符对应，所以可以直接用下标对应上字符种类
 		++file_len;													 //每读入一个字符，文件字符总长度加1，得出字符总长度
-		fread((char*)&char_temp, sizeof(unsigned char), 1, infile); //从infile中读入1个sizeof(unsigned char)这样大小的字节
+		fread((char *)&char_temp, sizeof(unsigned char), 1, infile); //从infile中读入1个sizeof(unsigned char)这样大小的字节
 	}
 	fclose(infile); //读完，关闭文件
 
-	// 排序，主要目的是将频度为零的放最后，进行下一步的剔除。比如a[0]到a[9],可能中间有几个字符并没有出现过，所以需要把这些频度为0的字符放到最后去，保证前面都是出现过的字符
+	// 排序，主要目的是将频度为零的放最后，进行下一步的剔除。
 	for (i = 0; i < 256 - 1; ++i)
 		for (j = i + 1; j < 256; ++j)
 			if (tmp_nodes[i].weight < tmp_nodes[j].weight)
@@ -118,21 +114,21 @@ int compress(char* ifname, char* ofname)
 		if (tmp_nodes[i].weight == 0) //一直循环到频度为0时，则i就表示字符的种类数，因为上一步已经将频度为0的放到了后面
 			break;
 	char_kinds = i; //i就表示了字符种类数
+	if (char_kinds < 1)
+		return -1; //输入有误
 
 	if (char_kinds == 1) //如果只有一个字符
 	{
 		outfile = fopen(ofname, "wb");											 // 打开压缩后将生成的文件
-		fwrite((char*)&char_kinds, sizeof(unsigned int), 1, outfile);			 // 写入字符种类
-		fwrite((char*)&tmp_nodes[0].uch, sizeof(unsigned char), 1, outfile);	 // 写入唯一的字符
-		fwrite((char*)&tmp_nodes[0].weight, sizeof(unsigned long), 1, outfile); // 写入字符频度，也就是文件长度
-//		free(tmp_nodes);
+		fwrite((char *)&char_kinds, sizeof(unsigned int), 1, outfile);			 // 写入字符种类
+		fwrite((char *)&tmp_nodes[0].uch, sizeof(unsigned char), 1, outfile);	 // 写入唯一的字符
+		fwrite((char *)&tmp_nodes[0].weight, sizeof(unsigned long), 1, outfile); // 写入字符频度，也就是文件长度
 		delete[] tmp_nodes;
 		fclose(outfile);
 	}
-	else //如果种类不只一种字符种类
+	else if (char_kinds > 1) //如果种类不只一种字符种类
 	{
-		node_num = 2 * char_kinds - 1;							  // 根据字符种类数，计算建立哈夫曼树所需结点数，相当于m=2*n-1
-		//huf_tree = (HufNode*)malloc(node_num * sizeof(HufNode)); // 动态建立哈夫曼树所需结点
+		node_num = 2 * char_kinds - 1; // 根据字符种类数，计算建立哈夫曼树所需结点数，相当于m=2*n-1
 		huf_tree = new HufNode[node_num];
 		// 初始化前char_kinds个结点
 		for (i = 0; i < char_kinds; ++i)
@@ -143,7 +139,7 @@ int compress(char* ifname, char* ofname)
 			huf_tree[i].parent = -1;
 			huf_tree[i].lchild = huf_tree[i].rchild = -1;
 		}
-//		free(tmp_nodes); // 释放字符频度统计的暂存区
+		//		free(tmp_nodes); // 释放字符频度统计的暂存区
 		delete[] tmp_nodes;
 		// 初始化后node_num-char_kins个结点
 		for (; i < node_num; ++i)
@@ -156,39 +152,23 @@ int compress(char* ifname, char* ofname)
 
 		// 写入字符和相应权重，供解压时重建哈夫曼树
 		outfile = fopen(ofname, "wb"); // 打开压缩后将生成的文件
-		fwrite((char*)&char_kinds, sizeof(unsigned int), 1, outfile);
-		// 写入字符种类size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream);
-		//注意：这个函数以二进制形式对文件进行操作，不局限于文本文件
-		//返回值：返回实际写入的数据块数目
-		//（1）buffer：是一个指针，对fwrite来说，是要获取数据的地址；
-		//（2）size：要写入内容的单字节数；
-		//（3）count:要进行写入size字节的数据项的个数；
-		//（4）stream:目标文件指针；
-		//（5）返回实际写入的数据项个数count。
+		fwrite((char *)&char_kinds, sizeof(unsigned int), 1, outfile);
 		for (i = 0; i < char_kinds; ++i) //下面两句是为了按顺序写入待生成文件
 		{
-			fwrite((char*)&huf_tree[i].uch, sizeof(unsigned char), 1, outfile);	// 写入字符（已排序，读出后顺序不变）
-			fwrite((char*)&huf_tree[i].weight, sizeof(unsigned long), 1, outfile); // 写入字符对应权重
+			fwrite((char *)&huf_tree[i].uch, sizeof(unsigned char), 1, outfile);	// 写入字符（已排序，读出后顺序不变）
+			fwrite((char *)&huf_tree[i].weight, sizeof(unsigned long), 1, outfile); // 写入字符对应权重
 		}
 
 		// 紧接着字符和权重信息后面写入文件长度和字符编码
-		fwrite((char*)&file_len, sizeof(unsigned long), 1, outfile); // 写入文件长度
+		fwrite((char *)&file_len, sizeof(unsigned long), 1, outfile); // 写入文件长度
 		infile = fopen(ifname, "rb");								  // 以二进制形式打开待压缩的文件
-		fread((char*)&char_temp, sizeof(unsigned char), 1, infile);  // 每次读取8bits
+		fread((char *)&char_temp, sizeof(unsigned char), 1, infile);  // 每次读取8bits
 		while (!feof(infile))										  //当没有读到文件末尾的时候
 		{
 			// 匹配字符对应编码
 			for (i = 0; i < char_kinds; ++i)
 				if (char_temp == huf_tree[i].uch)
 					strcat(code_buf, huf_tree[i].code);
-			//参见：http://www.kuqin.com/clib/string/strcat.html
-			//原型：extern char *strcat(char *dest,char *src);
-			//用法：#include <string.h>
-			//功能：把src所指字符串添加到dest结尾处(覆盖dest结尾处的'\0')并添加'\0'。
-			//说明：src和dest所指内存区域不可以重叠且dest必须有足够的空间来容纳src的字符串。
-			//      返回指向dest的指针。
-
-			// 以8位（一个字节长度）为处理单元
 			while (strlen(code_buf) >= 8) //因为是以8bit进行读取的
 			{
 				char_temp = '\0'; // 清空字符暂存空间，改为暂存字符对应编码
@@ -198,10 +178,10 @@ int compress(char* ifname, char* ofname)
 					if (code_buf[i] == '1')
 						char_temp |= 1; // 当编码为"1"，通过或操作符将其添加到字节的最低位。   |= 1表示或1运算。相当于上面一行中321后面的+2和+1的过程
 				}
-				fwrite((char*)&char_temp, sizeof(unsigned char), 1, outfile); // 将字节对应编码存入文件
+				fwrite((char *)&char_temp, sizeof(unsigned char), 1, outfile); // 将字节对应编码存入文件
 				strcpy(code_buf, code_buf + 8);								   // 编码缓存去除已处理的前八位
 			}
-			fread((char*)&char_temp, sizeof(unsigned char), 1, infile); // 每次读取8bits
+			fread((char *)&char_temp, sizeof(unsigned char), 1, infile); // 每次读取8bits
 		}
 		// 处理最后不足8bits编码
 		code_len = strlen(code_buf);
@@ -215,28 +195,28 @@ int compress(char* ifname, char* ofname)
 					char_temp |= 1;
 			}
 			char_temp <<= 8 - code_len;									   // 将编码字段从尾部移到字节的高位，加0补齐
-			fwrite((char*)&char_temp, sizeof(unsigned char), 1, outfile); // 存入最后一个字节
+			fwrite((char *)&char_temp, sizeof(unsigned char), 1, outfile); // 存入最后一个字节
 		}
 		// 关闭文件
 		fclose(infile);
 		fclose(outfile);
 		// 释放内存
 		for (i = 0; i < char_kinds; ++i)
-			delete huf_tree[i].code;//free(huf_tree[i].code);
-		//free(huf_tree);
+			delete huf_tree[i].code;
 		delete[] huf_tree;
 	}
+	return 0;
 }
 
-int extract(char* ifname, char* ofname)
+int extract(char *ifname, char *ofname)
 {
 	unsigned int i;
 	unsigned long file_len;
 	unsigned long writen_len = 0; // 控制文件写入长度
-	FILE* infile, * outfile;
+	FILE *infile, *outfile;
 	unsigned int char_kinds; // 存储字符种类
 	unsigned int node_num;
-	HufNode * huf_tree;
+	HufNode *huf_tree;
 	unsigned char code_temp; // 暂存8bits编码
 	unsigned int root;		 // 保存根节点索引，供匹配编码使用
 
@@ -246,42 +226,41 @@ int extract(char* ifname, char* ofname)
 		return -1;
 
 	// 读取压缩文件前端的字符及对应编码，用于重建哈夫曼树
-	fread((char*)&char_kinds, sizeof(unsigned int), 1, infile); // 读取字符种类数
+	fread((char *)&char_kinds, sizeof(unsigned int), 1, infile); // 读取字符种类数
 	if (char_kinds == 1)										 //如果只有一种字符
 	{
-		fread((char*)&code_temp, sizeof(unsigned char), 1, infile); // 读取唯一的字符
-		fread((char*)&file_len, sizeof(unsigned long), 1, infile);	 // 读取文件长度
+		fread((char *)&code_temp, sizeof(unsigned char), 1, infile); // 读取唯一的字符
+		fread((char *)&file_len, sizeof(unsigned long), 1, infile);	 // 读取文件长度
 		outfile = fopen(ofname, "wb");								 // 打开压缩后将生成的文件
 		while (file_len--)
-			fwrite((char*)&code_temp, sizeof(unsigned char), 1, outfile);
+			fwrite((char *)&code_temp, sizeof(unsigned char), 1, outfile);
 		fclose(infile);
 		fclose(outfile);
 	}
-	else
+	else if (char_kinds > 1)
 	{
-		node_num = 2 * char_kinds - 1;							  // 根据字符种类数，计算建立哈夫曼树所需结点数
-		//huf_tree = (HufNode*)malloc(node_num * sizeof(HufNode)); // 动态分配哈夫曼树结点空间
+		node_num = 2 * char_kinds - 1; // 根据字符种类数，计算建立哈夫曼树所需结点数
 		huf_tree = new HufNode[node_num];
 		// 读取字符及对应权重，存入哈夫曼树节点
 		for (i = 0; i < char_kinds; ++i)
 		{
-			fread((char*)&huf_tree[i].uch, sizeof(unsigned char), 1, infile);	  // 读入字符
-			fread((char*)&huf_tree[i].weight, sizeof(unsigned long), 1, infile); // 读入字符对应权重
-			huf_tree[i].parent = 0;
+			fread((char *)&huf_tree[i].uch, sizeof(unsigned char), 1, infile);	  // 读入字符
+			fread((char *)&huf_tree[i].weight, sizeof(unsigned long), 1, infile); // 读入字符对应权重
+			huf_tree[i].parent = -1;
 		}
 		// 初始化后node_num-char_kins个结点的parent
 		for (; i < node_num; ++i)
-			huf_tree[i].parent = 0;
+			huf_tree[i].parent = -1;
 
 		CreateTree(huf_tree, char_kinds, node_num); // 重建哈夫曼树（与压缩时的一致）
 
 		// 读完字符和权重信息，紧接着读取文件长度和编码，进行解码
-		fread((char*)&file_len, sizeof(unsigned long), 1, infile); // 读入文件长度
+		fread((char *)&file_len, sizeof(unsigned long), 1, infile); // 读入文件长度
 		outfile = fopen(ofname, "wb");								// 打开压缩后将生成的文件
 		root = node_num - 1;
 		while (1)
 		{
-			fread((char*)&code_temp, sizeof(unsigned char), 1, infile); // 读取一个字符长度的编码
+			fread((char *)&code_temp, sizeof(unsigned char), 1, infile); // 读取一个字符长度的编码
 
 			// 处理读取的一个字符长度的编码（通常为8位）
 			for (i = 0; i < 8; ++i)
@@ -294,7 +273,7 @@ int extract(char* ifname, char* ofname)
 
 				if (root < char_kinds)
 				{
-					fwrite((char*)&huf_tree[root].uch, sizeof(unsigned char), 1, outfile);
+					fwrite((char *)&huf_tree[root].uch, sizeof(unsigned char), 1, outfile);
 					++writen_len;
 					if (writen_len == file_len)
 						break;			 // 控制文件长度，跳出内层循环
@@ -310,14 +289,14 @@ int extract(char* ifname, char* ofname)
 		fclose(infile);
 		fclose(outfile);
 		// 释放内存
-		//free(huf_tree);
 		delete[] huf_tree;
 	}
+	return 0;
 }
 
-void drawing(HufNode* huf_tree, int char_kinds, int node_num)
+void drawing(HufNode *huf_tree, int char_kinds, int node_num)
 {
-	int gapx = (WIDTH-100) / char_kinds;
+	int gapx = (WIDTH - 100) / char_kinds;
 	int gapy = 40;
 
 	int root = 0;
@@ -329,7 +308,7 @@ void drawing(HufNode* huf_tree, int char_kinds, int node_num)
 	for (int i = 0; i < node_num; i++)
 	{
 		huf_tree[i].idx = huf_tree[i].idx /
-			pow(2, (int)(log10(huf_tree[i].idx) / log10(2)));
+						  pow(2, (int)(log10(huf_tree[i].idx) / log10(2)));
 	}
 
 	int no = 1;
@@ -357,7 +336,7 @@ void drawing(HufNode* huf_tree, int char_kinds, int node_num)
 		huf_tree[i].p.y = gapy * int(log10(huf_tree[i].idy) / log10(2)) + 50;
 	}
 
-	initgraph(1000, 600);//初始化绘图屏幕 
+	initgraph(WIDTH, HEIGHT); //初始化绘图屏幕
 	setcolor(WHITE);
 	setbkcolor(WHITE);
 	setfillstyle(WHITE);
@@ -367,11 +346,10 @@ void drawing(HufNode* huf_tree, int char_kinds, int node_num)
 	draw(huf_tree, root);
 
 	getchar();
-	getchar();
 	closegraph();
 }
 
-void treeNum(HufNode* huf_tree, int root, int rootnum)
+void treeNum(HufNode *huf_tree, int root, int rootnum)
 {
 	int lc = huf_tree[root].lchild;
 	int rc = huf_tree[root].rchild;
@@ -387,7 +365,7 @@ void treeNum(HufNode* huf_tree, int root, int rootnum)
 	}
 }
 
-void draw(HufNode* huf_tree, int root)
+void draw(HufNode *huf_tree, int root)
 {
 	int lc = huf_tree[root].lchild;
 	int rc = huf_tree[root].rchild;
@@ -397,11 +375,11 @@ void draw(HufNode* huf_tree, int root)
 	WCHAR arr[10];
 	wsprintf(arr, L"%d", huf_tree[root].weight);
 	setcolor(BLUE);
-	outtextxy(x+3, y-8, arr);
+	outtextxy(x + 3, y - 8, arr);
 	setcolor(BLACK);
 	if (lc == -1)
 	{
-		outtextxy(x, y+5, huf_tree[root].uch);
+		outtextxy(x, y + 5, huf_tree[root].uch);
 	}
 	else
 	{
