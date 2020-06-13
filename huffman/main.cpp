@@ -9,6 +9,7 @@ int main()
 	p:
 		cout << "请输入选择项:\n 1: 压缩\n 2: 解压缩\n 3: 退出\n";
 		cin >> opt;
+		while (getchar() != '\n');
 		if (opt == 3)
 			break;
 		else if (opt != 1 && opt != 2 && opt != 3)
@@ -19,13 +20,11 @@ int main()
 		else
 		{
 			cout << "请输入文件名称：";
-			while (getchar() != '\n')
-				continue; // 清空标准输入流，防止干扰gets函数读取文件名
 			cin.get(ifname, 256);
+			while (getchar() != '\n');
 			cout << "请输入需要输出的文件名称: ";
-			while (getchar() != '\n')
-				continue;
 			cin.get(ofname, 256);
+			while (getchar() != '\n');
 		}
 		switch (opt)
 		{

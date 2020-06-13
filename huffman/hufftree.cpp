@@ -1,4 +1,6 @@
 #include "hufftree.h"
+#include <graphics.h>
+#include<conio.h>
 
 void select(HufNode* huf_tree, unsigned int n, int* s1, int* s2)
 {
@@ -6,7 +8,7 @@ void select(HufNode* huf_tree, unsigned int n, int* s1, int* s2)
 	unsigned int i;
 	unsigned long min = ULONG_MAX;
 	for (i = 0; i < n; ++i) //选择两个其双亲域为0且权值最小的结点，并返回它们在HT中的序号s1和s2
-		if (huf_tree[i].parent == 0 && huf_tree[i].weight < min)
+		if (huf_tree[i].parent == -1 && huf_tree[i].weight < min)
 		{
 			min = huf_tree[i].weight;
 			*s1 = i;
@@ -16,7 +18,7 @@ void select(HufNode* huf_tree, unsigned int n, int* s1, int* s2)
 	// 找次小
 	min = ULONG_MAX;
 	for (i = 0; i < n; ++i)
-		if (huf_tree[i].parent == 0 && huf_tree[i].weight < min)
+		if (huf_tree[i].parent == -1 && huf_tree[i].weight < min)
 		{
 			min = huf_tree[i].weight;
 			*s2 = i;
@@ -41,7 +43,8 @@ void HufCode(HufNode* huf_tree, unsigned char_kinds)
 {
 	unsigned int i;
 	int cur, next, index;
-	char* code_tmp = new char[256];//(char*)malloc(256 * sizeof(char)); // 暂存编码，最多256个叶子，编码长度不超多255
+//	char* code_tmp = (char*)malloc(256 * sizeof(char)); // 暂存编码，最多256个叶子，编码长度不超多255
+	char* code_tmp = new char [256];
 	code_tmp[256 - 1] = '\0';
 
 	for (i = 0; i < char_kinds; ++i)
@@ -49,15 +52,16 @@ void HufCode(HufNode* huf_tree, unsigned char_kinds)
 		index = 256 - 1; // 编码临时空间索引初始化
 
 		// 从叶子向根反向遍历求编码
-		for (cur = i, next = huf_tree[i].parent; next != 0; cur = next, next = huf_tree[next].parent)
+		for (cur = i, next = huf_tree[i].parent; next != -1; cur = next, next = huf_tree[next].parent)
 			if (huf_tree[next].lchild == cur)
 				code_tmp[--index] = '0'; // 左‘0’
 			else
 				code_tmp[--index] = '1';								 // 右‘1’
-		huf_tree[i].code = new char[256 - index];//(char*)malloc((256 - index) * sizeof(char)); // 为第i个字符编码动态分配存储空间
+//		huf_tree[i].code = (char*)malloc((256 - index) * sizeof(char)); // 为第i个字符编码动态分配存储空间
+		huf_tree[i].code = new char[256 - index];
 		strcpy(huf_tree[i].code, &code_tmp[index]);						 // 正向保存编码到树结点相应域中
 	}
-	delete[]code_tmp;//free(code_tmp); // 释放编码临时空间
+	delete [] code_tmp; // 释放编码临时空间
 }
 
 int compress(char* ifname, char* ofname)
@@ -77,8 +81,8 @@ int compress(char* ifname, char* ofname)
 	** 动态分配256个结点，暂存字符频度，
 	** 统计并拷贝到树结点后立即释放
 	*/
-	TmpNode* tmp_nodes = new TmpNode[256];//(TmpNode*)malloc(256 * sizeof(TmpNode)); //malloc 向系统申请分配指定size个字节的内存空间。返回类型是 void* 类型。
-
+//	TmpNode* tmp_nodes = (TmpNode*)malloc(256 * sizeof(TmpNode)); //malloc 向系统申请分配指定size个字节的内存空间。返回类型是 void* 类型。
+	TmpNode* tmp_nodes = new TmpNode[256];
 	// 初始化暂存结点。一个unsigned char类型是8位，即1个字节，所有的字符都可以用这8位来表示，一共256种字符种类，所以下面用i对应相应的字符种类，为了后面的统计字符种类方便
 	for (i = 0; i < 256; ++i)
 	{
@@ -121,29 +125,32 @@ int compress(char* ifname, char* ofname)
 		fwrite((char*)&char_kinds, sizeof(unsigned int), 1, outfile);			 // 写入字符种类
 		fwrite((char*)&tmp_nodes[0].uch, sizeof(unsigned char), 1, outfile);	 // 写入唯一的字符
 		fwrite((char*)&tmp_nodes[0].weight, sizeof(unsigned long), 1, outfile); // 写入字符频度，也就是文件长度
-		delete[]tmp_nodes;//free(tmp_nodes);
+//		free(tmp_nodes);
+		delete[] tmp_nodes;
 		fclose(outfile);
 	}
 	else //如果种类不只一种字符种类
 	{
 		node_num = 2 * char_kinds - 1;							  // 根据字符种类数，计算建立哈夫曼树所需结点数，相当于m=2*n-1
-		huf_tree = new HufNode[node_num];//(HufNode*)malloc(node_num * sizeof(HufNode)); // 动态建立哈夫曼树所需结点
-
+		//huf_tree = (HufNode*)malloc(node_num * sizeof(HufNode)); // 动态建立哈夫曼树所需结点
+		huf_tree = new HufNode[node_num];
 		// 初始化前char_kinds个结点
 		for (i = 0; i < char_kinds; ++i)
 		{
 			// 将暂存结点的字符和频度拷贝到树结点
 			huf_tree[i].uch = tmp_nodes[i].uch;
 			huf_tree[i].weight = tmp_nodes[i].weight;
-			huf_tree[i].parent = 0;
+			huf_tree[i].parent = -1;
+			huf_tree[i].lchild = huf_tree[i].rchild = -1;
 		}
-		delete[]tmp_nodes;//free(tmp_nodes); // 释放字符频度统计的暂存区
-
+//		free(tmp_nodes); // 释放字符频度统计的暂存区
+		delete[] tmp_nodes;
 		// 初始化后node_num-char_kins个结点
 		for (; i < node_num; ++i)
-			huf_tree[i].parent = 0;
+			huf_tree[i].parent = -1;
 
 		CreateTree(huf_tree, char_kinds, node_num); // 创建哈夫曼树
+		drawing(huf_tree, char_kinds, node_num);
 
 		HufCode(huf_tree, char_kinds); // 生成哈夫曼编码
 
@@ -216,7 +223,8 @@ int compress(char* ifname, char* ofname)
 		// 释放内存
 		for (i = 0; i < char_kinds; ++i)
 			delete huf_tree[i].code;//free(huf_tree[i].code);
-		delete[]huf_tree;//free(huf_tree);
+		//free(huf_tree);
+		delete[] huf_tree;
 	}
 }
 
@@ -252,7 +260,8 @@ int extract(char* ifname, char* ofname)
 	else
 	{
 		node_num = 2 * char_kinds - 1;							  // 根据字符种类数，计算建立哈夫曼树所需结点数
-		huf_tree = new HufNode[node_num];//(HufNode*)malloc(node_num * sizeof(HufNode)); // 动态分配哈夫曼树结点空间
+		//huf_tree = (HufNode*)malloc(node_num * sizeof(HufNode)); // 动态分配哈夫曼树结点空间
+		huf_tree = new HufNode[node_num];
 		// 读取字符及对应权重，存入哈夫曼树节点
 		for (i = 0; i < char_kinds; ++i)
 		{
@@ -301,6 +310,108 @@ int extract(char* ifname, char* ofname)
 		fclose(infile);
 		fclose(outfile);
 		// 释放内存
-		delete[]huf_tree;//free(huf_tree);
+		//free(huf_tree);
+		delete[] huf_tree;
+	}
+}
+
+void drawing(HufNode* huf_tree, int char_kinds, int node_num)
+{
+	int gapx = (WIDTH-100) / char_kinds;
+	int gapy = 40;
+
+	int root = 0;
+	while (huf_tree[root].parent != -1)
+	{
+		root = huf_tree[root].parent;
+	}
+	treeNum(huf_tree, root, 1);
+	for (int i = 0; i < node_num; i++)
+	{
+		huf_tree[i].idx = huf_tree[i].idx /
+			pow(2, (int)(log10(huf_tree[i].idx) / log10(2)));
+	}
+
+	int no = 1;
+	for (int i = 0; i < char_kinds; i++)
+	{
+		no = 1;
+		for (int j = 0; j < char_kinds; j++)
+		{
+			if (huf_tree[j].idx < huf_tree[i].idx)
+			{
+				no++;
+			}
+		}
+		huf_tree[i].p.x = gapx * no;
+	}
+	int lc, rc;
+	for (int i = char_kinds; i < node_num; i++)
+	{
+		lc = huf_tree[i].lchild;
+		rc = huf_tree[i].rchild;
+		huf_tree[i].p.x = (huf_tree[lc].p.x + huf_tree[rc].p.x) / 2;
+	}
+	for (int i = 0; i < node_num; i++)
+	{
+		huf_tree[i].p.y = gapy * int(log10(huf_tree[i].idy) / log10(2)) + 50;
+	}
+
+	initgraph(1000, 600);//初始化绘图屏幕 
+	setcolor(WHITE);
+	setbkcolor(WHITE);
+	setfillstyle(WHITE);
+	cleardevice();
+	setcolor(BLACK);
+
+	draw(huf_tree, root);
+
+	getchar();
+	getchar();
+	closegraph();
+}
+
+void treeNum(HufNode* huf_tree, int root, int rootnum)
+{
+	int lc = huf_tree[root].lchild;
+	int rc = huf_tree[root].rchild;
+	huf_tree[root].idx = rootnum;
+	huf_tree[root].idy = rootnum;
+	if (lc != -1)
+	{
+		treeNum(huf_tree, lc, rootnum * 2);
+	}
+	if (rc != -1)
+	{
+		treeNum(huf_tree, rc, rootnum * 2 + 1);
+	}
+}
+
+void draw(HufNode* huf_tree, int root)
+{
+	int lc = huf_tree[root].lchild;
+	int rc = huf_tree[root].rchild;
+	int x = huf_tree[root].p.x;
+	int y = huf_tree[root].p.y;
+	circle(x, y, 2);
+	WCHAR arr[10];
+	wsprintf(arr, L"%d", huf_tree[root].weight);
+	setcolor(BLUE);
+	outtextxy(x+3, y-8, arr);
+	setcolor(BLACK);
+	if (lc == -1)
+	{
+		outtextxy(x, y+5, huf_tree[root].uch);
+	}
+	else
+	{
+		line(x, y, (int)huf_tree[lc].p.x, (int)huf_tree[lc].p.y);
+		line(x, y, (int)huf_tree[rc].p.x, (int)huf_tree[rc].p.y);
+		setcolor(RED);
+		outtextxy((x + (int)huf_tree[lc].p.x) / 2, (y + (int)huf_tree[lc].p.y) / 2, '0');
+		outtextxy((x + (int)huf_tree[rc].p.x) / 2, (y + (int)huf_tree[rc].p.y) / 2, '1');
+		setcolor(BLACK);
+		draw(huf_tree, lc);
+		draw(huf_tree, rc);
 	}
 }

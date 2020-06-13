@@ -7,6 +7,8 @@
 #include <iostream>
 using namespace std;
 
+#define WIDTH 1000
+
 class Point //坐标数据结构
 {
 public:
@@ -39,4 +41,6 @@ void CreateTree(HufNode* huf_tree, unsigned int char_kinds, unsigned int node_nu
 void HufCode(HufNode* huf_tree, unsigned char_kinds);
 int compress(char* ifname, char* ofname);
 int extract(char* ifname, char* ofname);
-void drawing();
+void drawing(HufNode* huf_tree, int char_kinds, int node_num);
+void treeNum(HufNode* huf_tree, int root, int rootnum);
+void draw(HufNode* huf_tree, int root);
